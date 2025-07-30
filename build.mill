@@ -4,6 +4,27 @@ import mill._, javalib._
 
 object `package` extends RootModule with MavenModule {
 
+  def openapiYaml = Task.Source("spec/openapi.yml")
+
+  def generator = Task {
+    val jarPath = Task.dest / "generator.jar"
+    os.write(jarPath, requests.get("https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/7.13.0/openapi-generator-cli-7.13.0.jar"))
+    PathRef(jarPath)
+  }
+
+  // see https://github.com/com-lihaoyi/mill/discussions/5301
+  override def generatedSources = Task {
+    os.call(("java", "-jar", generator().path, "generate",
+      "-i", openapiYaml().path,
+      "-g", "spring",
+      "-o", Task.dest,
+      "--api-package", "com.github.mikybars.challenge.prices.adapters.in.rest",
+      "--model-package", "com.github.mikybars.challenge.prices.adapters.in.rest",
+      "--model-name-suffix", "Dto",
+      "--additional-properties=sourceFolder=,useSpringBoot3=true,interfaceOnly=true,skipDefaultInterface=true,dateLibrary=java8-localdatetime,openApiNullable=false"))
+    Seq(PathRef(Task.dest))
+  }
+
   override def javacOptions = super.javacOptions() ++
     Seq("-Xlint:-options", "-parameters", "-Amapstruct.defaultComponentModel=spring")
 
