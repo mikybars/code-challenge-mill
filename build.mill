@@ -26,7 +26,9 @@ object `package` extends MavenModule {
   }
 
   override def javacOptions = Seq(
-    "-Xlint:-options", "-parameters", "-Amapstruct.defaultComponentModel=spring"
+    "-Xlint:-options", "-parameters", "-Amapstruct.defaultComponentModel=spring",
+    // see https://github.com/com-lihaoyi/mill/issues/5626
+    "-s", generatedSources().head.path.toString()
   )
 
   override def mvnDeps = Seq(
