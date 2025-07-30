@@ -5,3 +5,7 @@ build/
 !**/src/test/**/build/
 
 **/test/**/*.received.json
+
+# Mill
+/out/
+/.bsp/
