@@ -44,7 +44,7 @@ class GetProductPriceRestTest {
         .exchange();
 
     response
-        .expectStatus().isOk()
+        .expectStatus().isNotFound()
         .expectBody(String.class).consumeWith(result ->
             JsonApprovals.verifyJson(result.getResponseBody()));
   }
