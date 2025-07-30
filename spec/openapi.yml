@@ -1,0 +1,83 @@
+openapi: 3.0.0
+info:
+  title: Product Prices API
+  version: 1.0.0
+  description: API to retrieve prices from products
+
+paths:
+  /prices:
+    get:
+      summary: Get Product Price
+      description: Retrieves the price of a product based on the given parameters
+      operationId: getPrice
+      parameters:
+        - name: applicationDate
+          in: query
+          required: true
+          description: The application date for which the price is requested
+          schema:
+            type: string
+            format: date-time
+            example: "2023-03-28T15:30:00Z"
+        - name: productId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response with product price details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductPrice'
+        '400':
+          description: Bad request due to invalid parameters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Product price not found for the given parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    ProductPrice:
+      type: object
+      properties:
+        productId:
+          type: string
+        brandId:
+          type: string
+        priceListId:
+          type: string
+        startDate:
+          type: string
+          format: date-time
+          description: The start date of the price validity (inclusive)
+        endDate:
+          type: string
+          format: date-time
+          description: The end date of the price validity (inclusive)
+        amount:
+          type: string
+          description: The price amount
+          example: "13.50"
+        currencyCode:
+          type: string
+          description: The currency of the price
+          example: "EUR"
+
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          description: A machine readable code that identifies the error
+        message:
+          type: string
+          description: A textual description of the error

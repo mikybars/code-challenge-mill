@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: code-challenge
+  config:
+    import:
+      - error-handling.yml
