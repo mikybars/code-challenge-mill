@@ -2,7 +2,7 @@ package build
 
 import mill.*, javalib.*
 
-object `package` extends MavenModule {
+object `package` extends JavaModule {
 
   def openapiYaml = Task.Source("spec/openapi.yml")
 
@@ -47,7 +47,7 @@ object `package` extends MavenModule {
     mvn"org.mapstruct:mapstruct-processor:1.5.3.Final"
   )
 
-  object test extends MavenTests with TestModule.Junit5 {
+  object test extends JavaTests with TestModule.Junit5 {
     override def testSandboxWorkingDir = false
 
     override def mvnDeps = Seq(
