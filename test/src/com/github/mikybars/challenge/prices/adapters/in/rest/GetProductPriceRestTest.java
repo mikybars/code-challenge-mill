@@ -18,6 +18,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 
+
+// silly comment
 @WebMvcTest
 @Import(ProductPriceRestMapperImpl.class)
 class GetProductPriceRestTest {
