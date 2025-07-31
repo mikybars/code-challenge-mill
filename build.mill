@@ -4,34 +4,7 @@ import mill.*, javalib.*
 
 object `package` extends JavaModule {
 
-  def openapiYaml = Task.Source("spec/openapi.yml")
-
-  def generator = Task {
-    val jarPath = Task.dest / "generator.jar"
-    os.write(jarPath, requests.get("https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/7.13.0/openapi-generator-cli-7.13.0.jar"))
-    PathRef(jarPath)
-  }
-
-  // see https://github.com/com-lihaoyi/mill/discussions/5301
-  override def generatedSources = Task {
-    os.call(("java", "-jar", generator().path, "generate",
-      "-i", openapiYaml().path,
-      "-g", "spring",
-      "-o", Task.dest,
-      "--api-package", "com.github.mikybars.challenge.prices.adapters.in.rest",
-      "--model-package", "com.github.mikybars.challenge.prices.adapters.in.rest",
-      "--model-name-suffix", "Dto",
-      "--additional-properties=sourceFolder=,useSpringBoot3=true,interfaceOnly=true,skipDefaultInterface=true,dateLibrary=java8-localdatetime,openApiNullable=false"))
-    Seq(PathRef(Task.dest))
-  }
-
-  override def javacOptions = Seq(
-    "-Xlint:-options", "-parameters", "-Amapstruct.defaultComponentModel=spring",
-    // see https://github.com/com-lihaoyi/mill/issues/5626
-    "-s", generatedSources().head.path.toString()
-  )
-
-  override def mvnDeps = Seq(
+  override def mvnDeps: T[Seq[Dep]] = Seq(
     mvn"com.h2database:h2:2.2.224",
     mvn"jakarta.validation:jakarta.validation-api:3.0.2",
     mvn"io.github.wimdeblauwe:error-handling-spring-boot-starter:4.5.0",
@@ -40,17 +13,62 @@ object `package` extends JavaModule {
     mvn"org.springframework.boot:spring-boot-starter-web:3.4.4",
     mvn"org.springframework.boot:spring-boot-starter-webflux:3.4.4"
   )
-
-  override def compileMvnDeps = Seq(
+  
+  override def compileMvnDeps: T[Seq[Dep]] = Seq(
     mvn"org.projectlombok:lombok:1.18.36",
     mvn"org.mapstruct:mapstruct:1.5.3.Final",
     mvn"org.mapstruct:mapstruct-processor:1.5.3.Final"
   )
 
-  object test extends JavaTests with TestModule.Junit5 {
+  def restApiSpec = Task.Source("spec/openapi.yml")
+
+  def openApiGeneratorCli: T[PathRef] = Task {
+    val version = "7.13.0"
+    val jarPath = Task.dest / "openapi-generator-cli.jar"
+    os.write(jarPath, requests.get(s"https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/$version/openapi-generator-cli-$version.jar"))
+    PathRef(jarPath)
+  }
+
+  // see https://github.com/com-lihaoyi/mill/discussions/5301
+  def openapiGenerate: T[PathRef] = Task {
+    val packagePrefix = "com.github.mikybars.challenge"
+    val additionalProperties = Map(
+      "sourceFolder" -> "",
+      "useSpringBoot3" -> "true",
+      "interfaceOnly" -> "true",
+      "skipDefaultInterface" -> "true",
+      "dateLibrary" -> "java8-localdatetime",
+      "openApiNullable" -> "false"
+    )
+    os.call((
+      "java", "-jar", openApiGeneratorCli().path, "generate",
+      "--input-spec", restApiSpec().path,
+      "--generator-name", "spring",
+      "--output", Task.dest,
+      "--api-package", s"$packagePrefix.prices.adapters.in.rest",
+      "--model-package", s"$packagePrefix.prices.adapters.in.rest",
+      "--model-name-suffix", "Dto",
+      s"--additional-properties=${additionalProperties.map { case (k, v) => s"$k=$v" }.mkString(",")}"
+    ))
+    PathRef(Task.dest)
+  }
+
+  // see https://github.com/com-lihaoyi/mill/discussions/5301
+  override def generatedSources: T[Seq[PathRef]] = Seq(
+    PathRef(Task.dest), 
+    openapiGenerate()
+  )
+
+  override def javacOptions: T[Seq[String]] = Seq(
+    "-Xlint:-options", "-parameters", "-Amapstruct.defaultComponentModel=spring",
+    // see https://github.com/com-lihaoyi/mill/issues/5626
+    "-s", generatedSources().head.path.toString()
+  )
+
+  object test extends JavaTests, TestModule.Junit5 {
     override def testSandboxWorkingDir = false
 
-    override def mvnDeps = Seq(
+    override def mvnDeps: T[Seq[Dep]] = Seq(
       mvn"org.springframework.boot:spring-boot-starter-test:3.4.4",
       mvn"com.approvaltests:approvaltests:24.19.0",
       mvn"com.google.code.gson:gson:2.12.1",
