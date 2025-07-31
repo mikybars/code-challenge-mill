@@ -3,7 +3,7 @@
 
 # Servicio de precios
 
-## Descripción
+## Summary
 
 Esta aplicación implementa un servicio para la gestión y consulta de precios de productos en un 
 comercio electrónico expuesto a través de una API REST. Permite obtener el precio aplicable a un
