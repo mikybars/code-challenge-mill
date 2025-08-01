@@ -67,6 +67,7 @@ object `package` extends JavaModule {
 
   object test extends JavaTests, TestModule.Junit5 {
     override def testSandboxWorkingDir = false
+    override def testParallelism = false
 
     override def mvnDeps: T[Seq[Dep]] = Seq(
       mvn"org.springframework.boot:spring-boot-starter-test:3.4.4",
