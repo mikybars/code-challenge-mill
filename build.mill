@@ -1,8 +1,9 @@
 package build
 
-import mill.*, javalib.*
+import mill.*, javalib.*, checkstyle.*
 
-object `package` extends JavaModule {
+object `package` extends JavaModule, CheckstyleModule {
+  override def checkstyleVersion = "10.26.1"
 
   override def mvnDeps: T[Seq[Dep]] = Seq(
     mvn"com.h2database:h2:2.2.224",
