@@ -40,7 +40,7 @@ object `package` extends JavaModule {
       "dateLibrary" -> "java8-localdatetime",
       "openApiNullable" -> "false"
     )
-    os.call((
+    val generateCmd = os.proc((
       "java", "-jar", openApiGeneratorCli().path, "generate",
       "--input-spec", restApiSpec().path,
       "--generator-name", "spring",
@@ -49,7 +49,9 @@ object `package` extends JavaModule {
       "--model-package", s"$packagePrefix.prices.adapters.in.rest",
       "--model-name-suffix", "Dto",
       s"--additional-properties=${additionalProperties.map { case (k, v) => s"$k=$v" }.mkString(",")}"
-    ))
+    )).call()
+    println(generateCmd.out.text())
+    println(generateCmd.err.text())
     PathRef(Task.dest)
   }
 
