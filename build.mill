@@ -1,9 +1,41 @@
+//| mill-version: 1.0.2
+//| mvnDeps: ["io.github.mikybars::openapi-generator-mill-plugin::0.1.0"]
 package build
 
-import mill.*, javalib.*, checkstyle.*
+import mill.*
+import javalib.*
+import checkstyle.*
+import io.github.mikybars.mill.openapi.OpenApiModule
+import mill.api.BuildCtx
 
-object `package` extends JavaModule, CheckstyleModule {
+object `package` extends JavaModule, CheckstyleModule, OpenApiModule {
   override def checkstyleVersion = "10.26.1"
+
+  object openApi extends OpenApiConfig {
+    def inputSpec: T[PathRef] = Task.Source(BuildCtx.workspaceRoot / "spec/openapi.yml")
+
+    def apiPackage: T[String] = "com.github.mikybars.challenge.prices.adapters.in.rest"
+
+    def modelPackage: T[String] = apiPackage()
+
+    def generatorName: T[String] = "spring"
+
+    def modelNameSuffix: T[String] = "Dto"
+
+    def additionalProperties: T[Map[String, String]] = Map(
+      "sourceFolder" -> "",
+      "useSpringBoot3" -> "true",
+      "interfaceOnly" -> "true",
+      "skipDefaultInterface" -> "true",
+      "dateLibrary" -> "java8-localdatetime",
+      "openApiNullable" -> "false"
+    )
+  }
+
+  override def generatedSources: T[Seq[PathRef]] = Seq(
+    PathRef(Task.dest),
+    openApi.generate()
+  )
 
   override def mvnDeps: T[Seq[Dep]] = Seq(
     mvn"com.h2database:h2:2.2.224",
@@ -14,52 +46,11 @@ object `package` extends JavaModule, CheckstyleModule {
     mvn"org.springframework.boot:spring-boot-starter-web:3.4.4",
     mvn"org.springframework.boot:spring-boot-starter-webflux:3.4.4"
   )
-  
+
   override def compileMvnDeps: T[Seq[Dep]] = Seq(
     mvn"org.projectlombok:lombok:1.18.36",
     mvn"org.mapstruct:mapstruct:1.5.3.Final",
     mvn"org.mapstruct:mapstruct-processor:1.5.3.Final"
-  )
-
-  def restApiSpec = Task.Source("spec/openapi.yml")
-
-  def openApiGeneratorCli: T[PathRef] = Task {
-    val version = "7.13.0"
-    val jarPath = Task.dest / "openapi-generator-cli.jar"
-    os.write(jarPath, requests.get(s"https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/$version/openapi-generator-cli-$version.jar"))
-    PathRef(jarPath)
-  }
-
-  // see https://github.com/com-lihaoyi/mill/discussions/5301
-  def openapiGenerate: T[PathRef] = Task {
-    val packagePrefix = "com.github.mikybars.challenge"
-    val additionalProperties = Map(
-      "sourceFolder" -> "",
-      "useSpringBoot3" -> "true",
-      "interfaceOnly" -> "true",
-      "skipDefaultInterface" -> "true",
-      "dateLibrary" -> "java8-localdatetime",
-      "openApiNullable" -> "false"
-    )
-    val generateCmd = os.proc((
-      "java", "-jar", openApiGeneratorCli().path, "generate",
-      "--input-spec", restApiSpec().path,
-      "--generator-name", "spring",
-      "--output", Task.dest,
-      "--api-package", s"$packagePrefix.prices.adapters.in.rest",
-      "--model-package", s"$packagePrefix.prices.adapters.in.rest",
-      "--model-name-suffix", "Dto",
-      s"--additional-properties=${additionalProperties.map { case (k, v) => s"$k=$v" }.mkString(",")}"
-    )).call()
-    println(generateCmd.out.text())
-    println(generateCmd.err.text())
-    PathRef(Task.dest)
-  }
-
-  // see https://github.com/com-lihaoyi/mill/discussions/5301
-  override def generatedSources: T[Seq[PathRef]] = Seq(
-    PathRef(Task.dest), 
-    openapiGenerate()
   )
 
   override def javacOptions: T[Seq[String]] = Seq(
@@ -70,6 +61,7 @@ object `package` extends JavaModule, CheckstyleModule {
 
   trait MyTestModule extends JavaTests, TestModule.Junit5 {
     override def testSandboxWorkingDir = false
+
     override def testParallelism: T[Boolean] = true
 
     override def mvnDeps: T[Seq[Dep]] = Seq(
@@ -86,6 +78,7 @@ object `package` extends JavaModule, CheckstyleModule {
       mvn"com.google.code.gson:gson:2.12.1",
     )
   }
+
   object integration extends MyTestModule {
     override def moduleDeps: Seq[JavaModule] = Seq(test)
 
